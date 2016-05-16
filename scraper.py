@@ -10,7 +10,7 @@ import io
 
 FTP_URL = 'results.aec.gov.au'
 FTP_TIMEOUT = 30
-ELECTION_ID = '17496'
+ELECTION_ID = '15508'
 NS = {
 	'aec': 'http://www.aec.gov.au/xml/schema/mediafeed',
 	'eml': 'urn:oasis:names:tc:evs:schema:eml'
@@ -187,13 +187,15 @@ if __name__ == '__main__':
 	# Retrieve the data in each election's directory
 	for election_id in election_ids:
 		# go to the directory
-		path = '/{id}/Detailed/Verbose/'.format(id=election_id)
-		ftp.cwd(path)
-		# Get the files ordered by time
-		files = ftp.nlst('-t')
+           if election_id == ELECTION_ID:
+				path = '/{id}/Detailed/Verbose/'.format(id=election_id)
+				ftp.cwd(path)
+				# Get the files ordered by time
+				files = ftp.nlst('-t')
 
-		if files:
-			# Download the latest file and extract the data
-			latest_file = files[-1]
-			sock = urllib.urlopen('ftp://{url}{path}/{file}'.format(url=FTP_URL, path=path, file=latest_file))
-			extract_data(io.BytesIO(sock.read()), election_id)
+				if files:
+					# Download the latest file and extract the data
+					latest_file = files[-1]
+		                        print latest_file
+					sock = urllib.urlopen('ftp://{url}{path}/{file}'.format(url=FTP_URL, path=path, file=latest_file))
+					extract_data(io.BytesIO(sock.read()), election_id)
