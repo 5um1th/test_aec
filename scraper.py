@@ -10,6 +10,7 @@ import io
 
 FTP_URL = 'results.aec.gov.au'
 FTP_TIMEOUT = 30
+ELECTION_ID = '17496'
 NS = {
 	'aec': 'http://www.aec.gov.au/xml/schema/mediafeed',
 	'eml': 'urn:oasis:names:tc:evs:schema:eml'
@@ -72,6 +73,8 @@ def contest_data(xml, event_id, election_id):
 	name = contest.find('eml:ContestName', NS).text
 	enrolment = int(xml.find('aec:Enrolment', NS).text)
 
+	print "Processing Data for " + str(election_id) + " " + name
+
 	# First preference data
 	first_preferences = xml.find('aec:FirstPreferences', NS)
 	candidates = first_preferences.xpath('.//aec:Candidate', namespaces=NS)
@@ -83,11 +86,45 @@ def contest_data(xml, event_id, election_id):
 		candidates = two_candidate_preferred.xpath('.//aec:Candidate', namespaces=NS)
 		candidates_data = [candidate_data(candidate, event_id, election_id, id, 'two_candidate_preferred') for candidate in candidates]
 
+	polling_places =  xml.find('aec:PollingPlaces', NS)
+        if polling_places is not None:
+		polling_places_vote_data = [polling_places_data(polling_places, event_id, election_id, id) for polling_place in polling_places]
+
 	scraperwiki.sqlite.save(table_name='contest',
 		unique_keys=['event_id', 'election_id', 'id'],
 		data={'event_id': event_id, 'election_id': election_id, 'id': id, 'name': name, 'enrolment': enrolment})
 
 	return {'id': id, 'name': name, 'enrolment': enrolment, 'candidates': candidates_data}
+
+def polling_places_data(xml, event_id, election_id, contest_id):
+	polling_places = xml.xpath('.//aec:PollingPlace', namespaces=NS)
+	polling_place_vode_data = [polling_place_data(polling_place, event_id, election_id, contest_id) for polling_place in polling_places]
+
+	return {}
+
+def polling_place_data(xml, event_id, election_id, contest_id):
+    polling_place = xml.find('aec:PollingPlaceIdentifier', NS)
+    polling_place_id = polling_place.get('Id')
+
+    polling_place_first_preferences = xml.find('aec:FirstPreferences', NS)
+    candidates = polling_place_first_preferences.xpath('.//aec:Candidate', namespaces=NS)
+    candidates_data = [polling_place_candidate_data(candidate, event_id, election_id, contest_id, polling_place_id, 'polling_place_first_preferences') for candidate in candidates]
+
+    return {}
+
+def polling_place_candidate_data(xml, event_id, election_id, contest_id, polling_place_id, kind):
+	candidate = xml.find('eml:CandidateIdentifier', NS)
+	id = candidate.get('Id')
+	votes = int(xml.find('aec:Votes', NS).text)
+
+	#print str(contest_id) + " " + str(polling_place_id) + " " + str(id) + " " + str(votes)
+
+	scraperwiki.sqlite.save(table_name=kind,
+		unique_keys=['event_id', 'election_id', 'contest_id', 'polling_place_id', 'candidate_id'],
+		data={'event_id': event_id, 'election_id': election_id, 'contest_id': contest_id, 'candidate_id': id, 'polling_place_id': polling_place_id,
+			'votes': votes})
+
+	return {}
 
 # This function takes an lxml object and returns candidate data
 def candidate_data(xml, event_id, election_id, contest_id, kind):
@@ -124,9 +161,9 @@ def party_data(xml):
 		scraperwiki.sqlite.save(table_name='party',
 			unique_keys=['id'],
 			data={'id': id, 'code': code, 'name': name})
-		
+
 		return {'id': id, 'code': code, 'name': name}
-	
+
 	else:
 		return {}
 
