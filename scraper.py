@@ -8,9 +8,9 @@ from lxml import etree
 import urllib
 import io
 
-FTP_URL = 'results.aec.gov.au'
+FTP_URL = 'mediafeedtest.aec.gov.au'
 FTP_TIMEOUT = 30
-ELECTION_ID = '17496'
+ELECTION_ID = '20499'
 NS = {
 	'aec': 'http://www.aec.gov.au/xml/schema/mediafeed',
 	'eml': 'urn:oasis:names:tc:evs:schema:eml'
